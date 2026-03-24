@@ -65,6 +65,16 @@ export function HeroSection() {
           </span>
         </motion.div>
 
+        {/* Brand name above title */}
+        <motion.p
+          className="mb-3 font-heading text-sm font-semibold uppercase tracking-[0.4em] text-cinema-subtle sm:text-base"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.35 }}
+        >
+          Solo Films
+        </motion.p>
+
         {/* Title - staggered word reveal */}
         <h1 className="mb-8 font-heading text-5xl font-bold leading-tight tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
           {titleWords.map((word, i) => (
