@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Film, Calendar, TrendingUp, Receipt } from "lucide-react";
+import { LayoutDashboard, Film, Calendar, TrendingUp, Receipt, Images } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const mobileNavItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: Film },
+  { href: "/gallery", label: "Gallery", icon: Images },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/bookings", label: "Book", icon: Calendar },
   { href: "/social-hub", label: "Social", icon: TrendingUp },

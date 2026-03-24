@@ -12,6 +12,7 @@ import {
   LogOut,
   ShieldCheck,
   Receipt,
+  Images,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: Film },
+  { href: "/gallery", label: "Gallery", icon: Images },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/bookings", label: "Book a Shoot", icon: Calendar },
   { href: "/social-hub", label: "Social Hub", icon: TrendingUp },
