@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protected portal routes
-  const portalRoutes = ["/dashboard", "/projects", "/bookings", "/social-hub", "/settings", "/notifications", "/invoices", "/admin"];
+  const portalRoutes = ["/dashboard", "/projects", "/gallery", "/bookings", "/social-hub", "/settings", "/notifications", "/invoices", "/admin"];
   const isPortalRoute = portalRoutes.some((route) => pathname.startsWith(route));
 
   // Auth routes
