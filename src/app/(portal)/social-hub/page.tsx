@@ -1,15 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageTransition, StaggerContainer, StaggerItem } from "@/components/shared/PageTransition";
 import { GENRES, PLATFORMS } from "@/lib/constants";
 import {
   TrendingUp, Flame, Lightbulb, Hash, Globe, Video, MessageCircle, Star,
   BookOpen, Clock, Copy, CheckCheck, Maximize2, FileVideo, Zap, Target,
+  RefreshCw, Sparkles, PlaySquare, ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+// ─── Types for live sections ───────────────────────────────────────────────
+interface TwitterTrendsData {
+  hashtags: string[];
+  fetchedAt: number;
+  source: "live" | "cache" | "fallback";
+}
+
+interface ContentIdea {
+  title: string;
+  hook: string;
+  formatTip: string;
+}
+
+interface AiIdeasData {
+  ideas: ContentIdea[];
+}
+
+interface YoutubeTrendingVideo {
+  title: string;
+  viewCount: string;
+  channelTitle: string;
+  categoryId: string;
+}
+
+interface YoutubeData {
+  videos: YoutubeTrendingVideo[];
+}
 
 // ─── Platform icons ────────────────────────────────────────────────────────
 const platformIcons: Record<string, React.ElementType> = {
@@ -250,6 +279,72 @@ export default function SocialHubPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [copied, setCopied] = useState<string | null>(null);
 
+  // ── Live section state ──────────────────────────────────────────────────
+  const [twitterData, setTwitterData] = useState<TwitterTrendsData | null>(null);
+  const [twitterLoading, setTwitterLoading] = useState(true);
+
+  const [aiGenre, setAiGenre] = useState("music_video");
+  const [aiPlatform, setAiPlatform] = useState("instagram");
+  const [aiIdeas, setAiIdeas] = useState<ContentIdea[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const [youtubeData, setYoutubeData] = useState<YoutubeData | null>(null);
+  const [youtubeLoading, setYoutubeLoading] = useState(true);
+  const [youtubeError, setYoutubeError] = useState<string | null>(null);
+
+  const fetchTwitter = useCallback(async () => {
+    setTwitterLoading(true);
+    try {
+      const res = await fetch("/api/trends/twitter");
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data: TwitterTrendsData = await res.json();
+      setTwitterData(data);
+    } catch {
+      // keep previous data or null
+    } finally {
+      setTwitterLoading(false);
+    }
+  }, []);
+
+  const fetchYoutube = useCallback(async () => {
+    setYoutubeLoading(true);
+    setYoutubeError(null);
+    try {
+      const res = await fetch("/api/trends/youtube");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
+      setYoutubeData(data as YoutubeData);
+    } catch (err) {
+      setYoutubeError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setYoutubeLoading(false);
+    }
+  }, []);
+
+  const generateAiIdeas = async () => {
+    setAiLoading(true);
+    setAiIdeas(null);
+    try {
+      const res = await fetch("/api/trends/ai-ideas", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ genre: aiGenre, platform: aiPlatform }),
+      });
+      const data: AiIdeasData = await res.json();
+      if (!res.ok) throw new Error("Failed to generate ideas");
+      setAiIdeas(data.ideas ?? []);
+    } catch {
+      toast.error("Failed to generate ideas. Check ANTHROPIC_API_KEY.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTwitter();
+    fetchYoutube();
+  }, [fetchTwitter, fetchYoutube]);
+
   const filteredTips = tips.filter((tip) => {
     if (selectedGenre !== "all" && tip.genre !== selectedGenre) return false;
     if (selectedPlatform !== "all" && tip.platform !== selectedPlatform) return false;
@@ -278,6 +373,251 @@ export default function SocialHubPage() {
           </h1>
           <p className="mt-1 text-cinema-subtle">Tactics built for video creatives.</p>
         </div>
+
+        {/* ── SECTION A: What's Trending Now ─────────────────────────── */}
+        <motion.div
+          className="rounded-2xl border border-cinema-border glass overflow-hidden"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center justify-between border-b border-cinema-border/60 px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gold/10">
+                <Hash className="h-4 w-4 text-gold" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-cinema-text">What&apos;s Trending Now</h2>
+                {twitterData && (
+                  <p className="text-[11px] text-cinema-subtle">
+                    Updated {Math.round((Date.now() - twitterData.fetchedAt) / 60000)} min ago
+                    {twitterData.source === "fallback" && " · curated"}
+                  </p>
+                )}
+              </div>
+            </div>
+            <motion.button
+              onClick={fetchTwitter}
+              disabled={twitterLoading}
+              className="flex items-center gap-1.5 rounded-xl border border-cinema-border px-3 py-1.5 text-xs text-cinema-subtle transition-colors hover:border-gold/30 hover:text-gold disabled:opacity-40"
+              whileTap={{ scale: 0.95 }}
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", twitterLoading && "animate-spin")} />
+              Refresh
+            </motion.button>
+          </div>
+          <div className="px-5 py-4">
+            {twitterLoading ? (
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-8 animate-pulse rounded-full bg-cinema-surface/60"
+                    style={{ width: `${70 + Math.random() * 60}px` }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(twitterData?.hashtags ?? []).map((tag) => (
+                  <motion.a
+                    key={tag}
+                    href={`https://x.com/search?q=${encodeURIComponent(tag)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-cinema-border bg-cinema-surface/30 px-3.5 py-1.5 text-sm text-cinema-subtle transition-all hover:border-gold/40 hover:bg-gold/10 hover:text-gold"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    {tag}
+                  </motion.a>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ── SECTION B: AI Content Ideas ─────────────────────────────── */}
+        <motion.div
+          className="rounded-2xl border border-cinema-border glass overflow-hidden"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+        >
+          <div className="flex items-center gap-2.5 border-b border-cinema-border/60 px-5 py-4">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet/10">
+              <Sparkles className="h-4 w-4 text-violet" />
+            </div>
+            <h2 className="text-sm font-semibold text-cinema-text">AI Content Ideas</h2>
+          </div>
+
+          <div className="px-5 py-4 space-y-4">
+            {/* Controls */}
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-cinema-subtle">Genre</label>
+                <div className="relative">
+                  <select
+                    value={aiGenre}
+                    onChange={(e) => setAiGenre(e.target.value)}
+                    className="appearance-none rounded-xl border border-cinema-border bg-cinema-surface/40 pl-3 pr-8 py-2 text-sm text-cinema-text focus:border-gold/40 focus:outline-none"
+                  >
+                    {GENRES.map((g) => (
+                      <option key={g.key} value={g.key}>{g.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cinema-subtle" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-widest text-cinema-subtle">Platform</label>
+                <div className="relative">
+                  <select
+                    value={aiPlatform}
+                    onChange={(e) => setAiPlatform(e.target.value)}
+                    className="appearance-none rounded-xl border border-cinema-border bg-cinema-surface/40 pl-3 pr-8 py-2 text-sm text-cinema-text focus:border-gold/40 focus:outline-none"
+                  >
+                    {PLATFORMS.map((p) => (
+                      <option key={p.key} value={p.key}>{p.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cinema-subtle" />
+                </div>
+              </div>
+              <motion.button
+                onClick={generateAiIdeas}
+                disabled={aiLoading}
+                className="flex items-center gap-2 rounded-xl bg-gold px-4 py-2 text-sm font-semibold text-cinema-bg shadow-[0_0_20px_rgba(201,144,12,0.25)] transition-all hover:bg-gold/90 disabled:opacity-50"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Sparkles className="h-4 w-4" />
+                {aiLoading ? "Generating" : "Generate Ideas"}
+                {aiLoading && (
+                  <span className="inline-flex gap-0.5">
+                    <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
+                    <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
+                    <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
+                  </span>
+                )}
+              </motion.button>
+            </div>
+
+            {/* Ideas grid */}
+            <AnimatePresence mode="wait">
+              {aiIdeas && !aiLoading && (
+                <motion.div
+                  key="ideas"
+                  className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                >
+                  {aiIdeas.map((idea, i) => (
+                    <motion.div
+                      key={i}
+                      className="group relative overflow-hidden rounded-2xl border border-cinema-border glass p-4 hover:border-gold/20 transition-all"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.06 }}
+                      whileHover={{ y: -2 }}
+                    >
+                      <div className="pointer-events-none absolute -top-6 -right-6 h-16 w-16 rounded-full bg-gold/0 opacity-0 blur-[40px] transition-all duration-500 group-hover:bg-gold/20 group-hover:opacity-100" />
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gold">
+                        Idea {i + 1}
+                      </p>
+                      <h3 className="mb-2 text-sm font-semibold text-cinema-text group-hover:text-gold transition-colors leading-snug">
+                        {idea.title}
+                      </h3>
+                      <p className="mb-3 text-xs text-cinema-subtle leading-relaxed italic">
+                        &ldquo;{idea.hook}&rdquo;
+                      </p>
+                      <p className="mb-3 text-xs text-cinema-subtle/70 leading-relaxed border-t border-cinema-border/40 pt-3">
+                        <span className="text-cyan font-medium not-italic">Format:</span> {idea.formatTip}
+                      </p>
+                      <motion.button
+                        onClick={() => {
+                          navigator.clipboard.writeText(idea.hook);
+                          toast.success("Hook copied!");
+                        }}
+                        className="flex items-center gap-1.5 rounded-lg border border-cinema-border px-2.5 py-1 text-xs text-cinema-subtle transition-all hover:border-gold/30 hover:text-gold"
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Copy className="h-3 w-3" />
+                        Copy Hook
+                      </motion.button>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* ── SECTION C: YouTube Trending ──────────────────────────────── */}
+        <motion.div
+          className="rounded-2xl border border-cinema-border glass overflow-hidden"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center justify-between border-b border-cinema-border/60 px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose/10">
+                <PlaySquare className="h-4 w-4 text-rose" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-cinema-text">YouTube Trending in Your Space</h2>
+                <p className="text-[11px] text-cinema-subtle">Music &amp; Entertainment · US · Updated on page load</p>
+              </div>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            {youtubeLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-8 w-8 animate-pulse rounded-lg bg-cinema-surface/60 shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 animate-pulse rounded bg-cinema-surface/60" style={{ width: `${60 + Math.random() * 30}%` }} />
+                      <div className="h-2.5 w-24 animate-pulse rounded bg-cinema-surface/40" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : youtubeError ? (
+              <div className="rounded-xl border border-rose/20 bg-rose/5 px-4 py-3 text-sm text-rose">
+                {youtubeError.includes("YOUTUBE_API_KEY") ? "Add YOUTUBE_API_KEY to your environment variables." : youtubeError}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(youtubeData?.videos ?? []).map((video, i) => (
+                  <motion.div
+                    key={i}
+                    className="group flex items-center gap-3 rounded-xl border border-cinema-border/60 bg-cinema-surface/20 px-4 py-3 transition-all hover:border-gold/20 hover:bg-cinema-surface/40"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    whileHover={{ x: 2 }}
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose/10 text-xs font-bold text-rose">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-cinema-text group-hover:text-gold transition-colors">
+                        {video.title}
+                      </p>
+                      <p className="text-xs text-cinema-subtle">{video.channelTitle}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-cinema-border/60 px-2.5 py-0.5 text-[11px] font-medium text-cinema-subtle">
+                      {Number(video.viewCount).toLocaleString()} views
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
 
         {/* Tab bar */}
         <div className="flex gap-1 rounded-2xl border border-cinema-border bg-cinema-surface/20 p-1">
