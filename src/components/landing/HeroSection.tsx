@@ -67,7 +67,7 @@ export function HeroSection() {
 
         {/* Brand name above title */}
         <motion.p
-          className="mb-4 font-heading text-3xl font-bold uppercase tracking-[0.25em] text-gradient-gold sm:text-4xl md:text-5xl"
+          className="mb-1 font-heading text-3xl font-bold uppercase tracking-[0.25em] text-gradient-gold sm:text-4xl md:text-5xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
