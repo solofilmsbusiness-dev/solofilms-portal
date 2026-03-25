@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   LogOut,
   ShieldCheck,
+  GraduationCap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/admin/projects", label: "Projects", icon: Film, exact: false },
   { href: "/admin/bookings", label: "Bookings", icon: Calendar, exact: false },
   { href: "/admin/invoices", label: "Invoices", icon: Receipt, exact: false },
+  { href: "/admin/waitlist", label: "Waitlist", icon: GraduationCap, exact: false },
 ];
 
 export function AdminSidebar() {
