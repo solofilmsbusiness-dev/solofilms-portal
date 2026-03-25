@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/of-post?slot=morning", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/of-post?slot=afternoon", "schedule": "0 19 * * *" },
+    { "path": "/api/cron/of-post?slot=evening", "schedule": "0 1 * * *" }
+  ]
+}
