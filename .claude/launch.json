@@ -3,9 +3,13 @@
   "configurations": [
     {
       "name": "solofilms-portal",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "/usr/local/bin/npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": true,
+      "env": {
+        "PATH": "/usr/local/bin:/usr/bin:/bin"
+      }
     }
   ]
 }
