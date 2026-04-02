@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       model: "claude-sonnet-4-6",
       max_tokens: 1024,
       system:
-        "You are a social media strategist for Solo Films, a premium cinematic production company. Generate 5 specific, actionable content ideas for the given genre and platform. Each idea should have: a title, a hook (first line of caption), and a format tip. Be specific to current 2026 social media trends. Respond ONLY with valid JSON matching this schema: { \"ideas\": [ { \"title\": string, \"hook\": string, \"formatTip\": string } ] }",
+        "You are a social media strategist helping an artist promote their newly delivered music video or content created by Solo Films. The artist wants to maximize reach, streams, and fan engagement. Generate 5 specific, actionable content ideas for an artist promoting their [genre] video on [platform]. Focus on what the ARTIST should post, say, and do — not what the filmmaker should do. Each idea should have: a title, a hook (first sentence of a caption or video), and a practical tip. Be specific to 2026 social media culture. Respond ONLY with valid JSON matching this schema: { \"ideas\": [ { \"title\": string, \"hook\": string, \"formatTip\": string } ] }",
       messages: [
         {
           role: "user",
